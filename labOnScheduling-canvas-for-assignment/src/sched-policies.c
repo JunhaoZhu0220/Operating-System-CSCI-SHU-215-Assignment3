@@ -514,14 +514,14 @@ int IORR(task tasks[], int nbOfTasks, sched_data *schedData, int currentTime)
     i = head(schedData, 0);
     if (i != -1 && tasks[i].state == RUNNING)
     {
-        tasks[i].executionTime++;
+        tasks[i].cyclesInQuantum++;
 
-        // Case 1: The task needs to perform IO, put it to SLEEPING and keep it at head
+        // Case 1: The task needs to perform IO, put it to SLEEPING and keep it at the end
         if (tasks[i].ioInterval > 0 && (tasks[i].executionTime % tasks[i].ioInterval == 0))
         {
             tasks[i].state = SLEEPING;
             tasks[i].cyclesInIO = 0;
-            // Task stays at the end
+            tasks[i].cyclesInQuantum = 0;
             dequeue(schedData, 0);
             enqueue(schedData, 0, i);
         }
@@ -533,16 +533,20 @@ int IORR(task tasks[], int nbOfTasks, sched_data *schedData, int currentTime)
             tasks[i].completionDate = currentTime;
             dequeue(schedData, 0);
         }
+
         // Case 3: The task has used up its time quantum, put it back to READY and enqueue it at the end of the queue
-        else if (tasks[i].executionTime % schedData->quantum == 0)
+        else if (tasks[i].cyclesInQuantum == schedData->quantum)
         {
             tasks[i].state = READY;
+            tasks[i].cyclesInQuantum = 0;
             dequeue(schedData, 0);
             enqueue(schedData, 0, i);
         }
+
         // Case 4: Continue running
         else
         {
+            tasks[i].executionTime++;
             printQueues(tasks, schedData);
             return i;
         }
@@ -550,12 +554,21 @@ int IORR(task tasks[], int nbOfTasks, sched_data *schedData, int currentTime)
 
     printQueues(tasks, schedData);
 
-    // Elect the first READY task at the head of the queue to run
-    i = head(schedData, 0);
-    if (i != -1 && tasks[i].state == READY)
+    // Elect the first READY task in the queue to run
+    for (int queuePos = 0; queuePos < MAX_NB_OF_TASKS; queuePos++)
     {
-        tasks[i].state = RUNNING;
-        return i;
+        int taskIndex = schedData->queues[0][queuePos];
+        if (taskIndex == -1)
+        {
+            break;
+        }
+        if (tasks[taskIndex].state == READY)
+        {
+            tasks[taskIndex].state = RUNNING;
+            tasks[taskIndex].cyclesInQuantum = 0;
+            tasks[taskIndex].executionTime++;
+            return taskIndex;
+        }
     }
 
     // No task could be elected

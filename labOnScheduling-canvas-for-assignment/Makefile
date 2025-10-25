@@ -1,6 +1,6 @@
 CFLAGS=-Iinclude -Wall
-FILE=tasks5
-POLICY=IORR 4
+FILE=tasks2
+POLICY=MFQ 4
 #POLICY values
 #	FCFS
 #	SJF
