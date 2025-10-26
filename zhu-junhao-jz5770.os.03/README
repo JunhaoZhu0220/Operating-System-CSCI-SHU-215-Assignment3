@@ -1,0 +1,43 @@
+
+First Name: Junhao
+
+Last Name: Zhu
+
+NYU ID: jz5770
+
+=======================================================================================
+Files submitted:
+
+include:
+    os-scheduling.h: Q1-Q3 (Provided)
+
+src:
+    sched-policies.c: Q1-Q3 (Implemented RR, MFQ, and IORR, added a new function dequeue_with_idx for easier dequeue manipulation)
+    sched-simulator.c: Q1-Q3 (Modified for applying policy parameters)
+
+RR-run.txt: Q1 (Output file with tasks5 and RR, quantum 4)
+MFQ-run.txt: Q2 (Output file with tasks5 and MFQ, quantum 3)
+iorr-run.txt: Q3 (Output file with tasks6 and IORR, quantum 4)
+
+=======================================================================================
+Targets in the Makefile:
+    For RR and MFQ:
+    change the FILE variable to one of the following: tasks, tasks2, tasks3, tasks4, tasks5
+    change the POLICY variable to RR or MFQ accordingly, and an extra value for quantum, then run `make`. (e.g. RR 4; MFQ 3)
+    For IORR:
+    change the FILE variable to tasks6 or any custom tasks which have the same format of tasks6
+    change the POLICY variable to IORR, and an extra value for quantum, then run `make`. (e.g. IORR 3)
+
+=======================================================================================
+Comments:
+The format of printed queues following the fashion of example-outputs/t4rr.txt.
+
+
+
+=======================================================================================
+
+
+
+
+
+	
