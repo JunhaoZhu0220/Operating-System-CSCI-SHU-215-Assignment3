@@ -75,6 +75,25 @@ int dequeue(sched_data *schedData, int queueIndex)
     return taskIndex;
 }
 
+int dequeue_with_idx(sched_data *schedData, int queueIndex, int taskIndex)
+{
+    // Find and remove the task with the given taskIndex from the queue
+    for (int queuePos = 0; queuePos < MAX_NB_OF_TASKS; queuePos++)
+    {
+        if (schedData->queues[queueIndex][queuePos] == taskIndex)
+        {
+            // Remove from current position by shifting all elements after it
+            for (int k = queuePos; k < MAX_NB_OF_TASKS - 1; k++)
+            {
+                schedData->queues[queueIndex][k] = schedData->queues[queueIndex][k + 1];
+            }
+            schedData->queues[queueIndex][MAX_NB_OF_TASKS - 1] = -1;
+            return taskIndex;
+        }
+    }
+    return -1; // Task not found in queue
+}
+
 int head(sched_data *schedData, int queueIndex)
 {
     return schedData->queues[queueIndex][0];
@@ -500,6 +519,8 @@ int IORR(task tasks[], int nbOfTasks, sched_data *schedData, int currentTime)
                 {
                     tasks[j].state = TERMINATED;
                     tasks[j].completionDate = currentTime;
+                    // Remove terminated task from queue
+                    dequeue_with_idx(schedData, 0, j);
                 }
                 else
                 {
@@ -510,19 +531,34 @@ int IORR(task tasks[], int nbOfTasks, sched_data *schedData, int currentTime)
         }
     }
 
-    // Check if there's a running task and handle it
-    i = head(schedData, 0);
-    if (i != -1 && tasks[i].state == RUNNING)
+    // Traverse through the queue to check if there's a running task and handle it
+    i = -1;
+    for (int queuePos = 0; queuePos < MAX_NB_OF_TASKS; queuePos++)
+    {
+        int taskIndex = schedData->queues[0][queuePos];
+        if (taskIndex == -1)
+        {
+            break;
+        }
+        if (tasks[taskIndex].state == RUNNING)
+        {
+            i = taskIndex;
+            break;
+        }
+    }
+
+    if (i != -1)
     {
         tasks[i].cyclesInQuantum++;
 
-        // Case 1: The task needs to perform IO, put it to SLEEPING and keep it at the end
+        // Case 1: The task needs to perform IO, put it to SLEEPING and move to queue end
         if (tasks[i].ioInterval > 0 && (tasks[i].executionTime % tasks[i].ioInterval == 0))
         {
             tasks[i].state = SLEEPING;
             tasks[i].cyclesInIO = 0;
             tasks[i].cyclesInQuantum = 0;
-            dequeue(schedData, 0);
+            // Remove task from current position and add to end
+            dequeue_with_idx(schedData, 0, i);
             enqueue(schedData, 0, i);
         }
 
@@ -531,15 +567,16 @@ int IORR(task tasks[], int nbOfTasks, sched_data *schedData, int currentTime)
         {
             tasks[i].state = TERMINATED;
             tasks[i].completionDate = currentTime;
-            dequeue(schedData, 0);
+            // Remove terminated task from queue
+            dequeue_with_idx(schedData, 0, i);
         }
 
-        // Case 3: The task has used up its time quantum, put it back to READY and enqueue it at the end of the queue
+        // Case 3: The task has used up its time quantum, put it back to READY and move it to end
         else if (tasks[i].cyclesInQuantum == schedData->quantum)
         {
             tasks[i].state = READY;
-            tasks[i].cyclesInQuantum = 0;
-            dequeue(schedData, 0);
+            // Remove task from current position and add to end
+            dequeue_with_idx(schedData, 0, i);
             enqueue(schedData, 0, i);
         }
 
